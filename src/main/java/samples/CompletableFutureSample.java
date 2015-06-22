@@ -10,6 +10,7 @@ import model.Test;
 import model.TestA;
 import model.TestB;
 import model.TestC;
+import model.TestD;
 
 public class CompletableFutureSample {
 
@@ -41,16 +42,26 @@ public class CompletableFutureSample {
         System.out.println(futureFlow.get());
 
         //example TestC should be exectued when TestA and TestB have finished
-        CompletableFuture<String> testACompletableFuture = CompletableFuture.supplyAsync(() -> new TestA().message());
-        CompletableFuture<String> testBCompletableFuture = CompletableFuture.supplyAsync(() -> new TestB().message());
-        testACompletableFuture
-                .thenCombineAsync(testBCompletableFuture, CompletableFutureSample::combien)
+        CompletableFuture.supplyAsync(() -> new TestA().message())
+                .thenCombineAsync(CompletableFuture.supplyAsync(() -> new TestB().message()), CompletableFutureSample::combien)
                 .thenCompose(s -> CompletableFuture.supplyAsync(() -> new TestC().message(s)))
                 .get();
+
+
+        //TestD depends on TestA and TestB
+        //TestC depends on TestA
+        CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> new TestA().message());
+
+        CompletableFuture<String> stringCompletableFuture = future
+                .thenCombineAsync(CompletableFuture.supplyAsync(() -> new TestB().message()), CompletableFutureSample::combien)
+                .thenComposeAsync(s -> CompletableFuture.supplyAsync(() -> new TestD().message()));
+
+        CompletableFuture<String> futureC = future.thenComposeAsync(s -> CompletableFuture.supplyAsync(() -> new TestC().message(s)));
+
+        System.out.println(stringCompletableFuture.thenCombineAsync(futureC, CompletableFutureSample::combien).get());
     }
 
     private static String combien(String s1, String s2) {
-        System.out.println(s1.concat(s2));
         return s1.concat(s2);
     }
 }
