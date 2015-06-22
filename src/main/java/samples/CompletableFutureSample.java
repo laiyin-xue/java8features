@@ -33,6 +33,20 @@ public class CompletableFutureSample {
         System.out.println(CompletableFuture.supplyAsync(() -> new TestA().message())
                 .thenApplyAsync(s -> new TestC().message(s))
                 .get());
+
+        //example for thenCompose
+        System.out.println("=======================example for thenCompose=======================");
+        CompletableFuture<String> futureFlow = CompletableFuture.supplyAsync(() -> new TestA().message())
+                .thenCompose(s -> CompletableFuture.supplyAsync(() -> new TestC().message(s)));
+        System.out.println(futureFlow.get());
+
+        //example TestC should be exectued when TestA and TestB have finished
+        CompletableFuture<String> testACompletableFuture = CompletableFuture.supplyAsync(() -> new TestA().message());
+        CompletableFuture<String> testBCompletableFuture = CompletableFuture.supplyAsync(() -> new TestB().message());
+        testACompletableFuture
+                .thenCombineAsync(testBCompletableFuture, CompletableFutureSample::combien)
+                .thenCompose(s -> CompletableFuture.supplyAsync(() -> new TestC().message(s)))
+                .get();
     }
 
     private static String combien(String s1, String s2) {
